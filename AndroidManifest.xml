@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.demo.nytswitcher">
+
+  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="30"/>
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+  
+  <!-- ĐOẠN QUAN TRỌNG ĐỂ MỞ GAME -->
+  <queries>
+      <package android:name="com.dts.freefiremax" />
+      <package android:name="com.dts.freefireth" />
+  </queries>
+
+  <application
+      android:label="NYT SWITCHER"
+      android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+      android:requestLegacyExternalStorage="true">
+
+    <activity android:name=".Main"
+        android:exported="true"
+        android:screenOrientation="portrait">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.LAUNCHER"/>
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>
