@@ -83,13 +83,9 @@ public class Main extends Activity {
         startUpdates();
     }
 
-    // ============================================================
-    // BUILD UI
-    // ============================================================
     void buildUI() {
         frame = new FrameLayout(this);
 
-        // Video bg (optional) or gradient fallback
         VideoView vv = new VideoView(this);
         vv.setLayoutParams(new FrameLayout.LayoutParams(-1, -1));
         File vid = extractBgVideo();
@@ -120,12 +116,10 @@ public class Main extends Activity {
             frame.addView(fallback, new FrameLayout.LayoutParams(-1, -1));
         }
 
-        // Heavy dim for premium dark look
         View dim = new View(this);
         dim.setBackgroundColor(0xCC000000);
         frame.addView(dim, new FrameLayout.LayoutParams(-1, -1));
 
-        // Content (scrollable)
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         scroll.setVerticalScrollBarEnabled(false);
@@ -139,12 +133,13 @@ public class Main extends Activity {
         buildProgressCard();
         buildAimCard();
         buildHUD();
-        // spacer
+        
+        // Khoảng trống nhỏ thay vì dùng weight (gây lỗi phình to)
         View spacer = new View(this);
-        root.addView(spacer, new LinearLayout.LayoutParams(-1, 0, 1f));
+        root.addView(spacer, new LinearLayout.LayoutParams(-1, dp(16))); 
+        
         buildPickBtn();
 
-        // scanline
         scanline = new View(this);
         GradientDrawable sl = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
                 new int[]{0x0000DCFF, 0xB300DCFF, 0x0000DCFF});
@@ -158,9 +153,6 @@ public class Main extends Activity {
         setContentView(frame);
     }
 
-    // ============================================================
-    // HEADER — NYT MODS
-    // ============================================================
     void buildHeader() {
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.VERTICAL);
@@ -200,7 +192,6 @@ public class Main extends Activity {
         titleText.setIncludeFontPadding(false);
         logoWrap.addView(titleText);
 
-        // Apply gradient shader after layout
         titleText.post(() -> {
             int w = titleText.getWidth();
             int h = titleText.getHeight();
@@ -229,7 +220,6 @@ public class Main extends Activity {
         hLp.bottomMargin = dp(20);
         root.addView(header, hLp);
 
-        // Pulse dot
         pulseDot();
     }
 
@@ -243,9 +233,6 @@ public class Main extends Activity {
         sx.start(); sy.start(); al.start();
     }
 
-    // ============================================================
-    // PROGRESS CARD
-    // ============================================================
     void buildProgressCard() {
         LinearLayout card = makeCard();
 
@@ -310,9 +297,6 @@ public class Main extends Activity {
         root.addView(card, clp);
     }
 
-    // ============================================================
-    // AIM CONTROL CARD
-    // ============================================================
     void buildAimCard() {
         LinearLayout card = makeCard();
 
@@ -401,7 +385,6 @@ public class Main extends Activity {
     void onPillClick(LinearLayout pill) {
         String pkg = (String) pill.getTag();
         if (gamePkg.equals(pkg)) {
-            // 2nd tap → launch
             launchGame(pkg);
         } else {
             gamePkg = pkg;
@@ -444,9 +427,6 @@ public class Main extends Activity {
         } catch (Exception e) { setStatus("ERR", C_RED); }
     }
 
-    // ============================================================
-    // HUD
-    // ============================================================
     void buildHUD() {
         LinearLayout card = makeCard();
 
@@ -500,8 +480,8 @@ public class Main extends Activity {
 
         TextView v = new TextView(this);
         v.setText(val);
-        v.setTextSize(14);
-        v.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        v.setTextSize(13); // Giảm size xuống 13 cho vừa vặn
+        v.setTypeface(Typeface.DEFAULT_BOLD); // Bỏ MONOSPACE để nhìn mượt hơn
         v.setTextColor(color);
         LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(-2, -2);
         vlp.topMargin = dp(4);
@@ -512,9 +492,6 @@ public class Main extends Activity {
         return v;
     }
 
-    // ============================================================
-    // PICK BUTTON
-    // ============================================================
     void buildPickBtn() {
         FrameLayout wrap = new FrameLayout(this);
         GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
@@ -529,8 +506,7 @@ public class Main extends Activity {
         LinearLayout inner = new LinearLayout(this);
         inner.setOrientation(LinearLayout.HORIZONTAL);
         inner.setGravity(Gravity.CENTER);
-        inner.setPadding(dp(20), dp(18), dp(20), dp(18));
-        inner.setLayoutParams(new FrameLayout.LayoutParams(-1, -2));
+        inner.setLayoutParams(new FrameLayout.LayoutParams(-1, -1)); // Full height
 
         TextView icon = new TextView(this);
         icon.setText("📂");
@@ -549,7 +525,6 @@ public class Main extends Activity {
 
         wrap.addView(inner);
 
-        // Shimmer sweep
         View sh = new View(this);
         GradientDrawable shbg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
                 new int[]{0x00FFFFFF, 0x88FFFFFF, 0x00FFFFFF});
@@ -564,12 +539,11 @@ public class Main extends Activity {
             a.start();
         });
 
-        root.addView(wrap, new LinearLayout.LayoutParams(-1, -2));
+        // CỐ ĐỊNH CHIỀU CAO NÚT LÀ 60DP
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(60));
+        root.addView(wrap, lp);
     }
 
-    // ============================================================
-    // HELPERS
-    // ============================================================
     LinearLayout makeCard() {
         LinearLayout c = new LinearLayout(this);
         c.setOrientation(LinearLayout.VERTICAL);
@@ -587,9 +561,6 @@ public class Main extends Activity {
         tvStatus.setTextColor(color);
     }
 
-    // ============================================================
-    // PROGRESS
-    // ============================================================
     void setProgress(int pct, String title) {
         progressTitle.setText(title);
         progressPct.setText(pct + "%");
@@ -614,9 +585,6 @@ public class Main extends Activity {
         va.start();
     }
 
-    // ============================================================
-    // SCANLINE
-    // ============================================================
     void animateScanline() {
         int h = getResources().getDisplayMetrics().heightPixels;
         scanline.setTranslationY(0);
@@ -626,9 +594,6 @@ public class Main extends Activity {
         a.start();
     }
 
-    // ============================================================
-    // FILE PICKER
-    // ============================================================
     void pickFiles() {
         Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         i.setType("application/zip");
@@ -648,9 +613,6 @@ public class Main extends Activity {
         }
     }
 
-    // ============================================================
-    // ACTIVATE
-    // ============================================================
     void activateFiles() {
         if (busy) return;
         if (pickedUri == null) {
@@ -733,9 +695,6 @@ public class Main extends Activity {
         }).start();
     }
 
-    // ============================================================
-    // RESTORE
-    // ============================================================
     void restoreFiles() {
         if (busy) return;
         busy = true;
@@ -771,9 +730,6 @@ public class Main extends Activity {
         }).start();
     }
 
-    // ============================================================
-    // IO
-    // ============================================================
     void copyRecursive(File src, File dst, File base) throws Exception {
         if (src.isDirectory()) {
             dst.mkdirs();
@@ -805,9 +761,6 @@ public class Main extends Activity {
         f.delete();
     }
 
-    // ============================================================
-    // LIVE UPDATES
-    // ============================================================
     void startUpdates() {
         ui.postDelayed(new Runnable() {
             public void run() {
@@ -834,9 +787,6 @@ public class Main extends Activity {
         }, 500);
     }
 
-    // ============================================================
-    // BG VIDEO
-    // ============================================================
     File extractBgVideo() {
         try {
             File f = new File(getCacheDir(), "bg.mp4");
