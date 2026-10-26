@@ -27,6 +27,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.VideoView;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,16 +37,16 @@ import java.util.zip.ZipInputStream;
 
 public class Main extends Activity {
 
-    // UI Colors (Trong suốt)
-    static final int C_BG_CARD    = 0x33000000; // Nền card trong suốt 20%
-    static final int C_BORDER     = 0x4DFFFFFF;
+    // UI Colors (Trong suốt hơn nữa)
+    static final int C_BG_CARD    = 0x4D000000; // Nền card trong suốt 30%
+    static final int C_BORDER     = 0x40FFFFFF;
     static final int C_BORDER_ACT = 0xB300DCFF;
     static final int C_CYAN       = 0xFF00DCFF;
     static final int C_GREEN      = 0xFF00FF88;
     static final int C_RED        = 0xFFFF4D5E;
     static final int C_WARN       = 0xFFFFB020;
     static final int C_TEXT       = 0xFFE8E8F0;
-    static final int C_TEXT_DIM   = 0x80A0C8FF;
+    static final int C_TEXT_DIM   = 0xB3A0C8FF;
 
     FrameLayout frame;
     LinearLayout root;
@@ -116,9 +117,9 @@ public class Main extends Activity {
             frame.addView(fallback, new FrameLayout.LayoutParams(-1, -1));
         }
 
-        // Lớp phủ RẤT NHẸ để vẫn nhìn rõ video background
+        // Bỏ lớp phủ tối, chỉ để lại 1 lớp siêu nhẹ để chữ dễ đọc
         View dim = new View(this);
-        dim.setBackgroundColor(0x15000000); // Chỉ 8% tối
+        dim.setBackgroundColor(0x10000000); // Chỉ 6% tối
         frame.addView(dim, new FrameLayout.LayoutParams(-1, -1));
 
         ScrollView scroll = new ScrollView(this);
@@ -253,7 +254,7 @@ public class Main extends Activity {
 
         progressTrack = new FrameLayout(this);
         GradientDrawable tbg = new GradientDrawable();
-        tbg.setColor(0x22FFFFFF);
+        tbg.setColor(0x33FFFFFF);
         tbg.setCornerRadius(dp(3));
         progressTrack.setBackground(tbg);
         progressTrack.setClipToOutline(true);
@@ -482,14 +483,14 @@ public class Main extends Activity {
         row.setOrientation(LinearLayout.HORIZONTAL);
 
         // Nút Chọn File (Trong suốt)
-        FrameLayout pickWrap = createBtn("📂 CHỌN FILE", new int[]{0xCCFF006E, 0xCCA000FF});
+        FrameLayout pickWrap = createBtn("📂 CHỌN FILE", new int[]{0x99FF006E, 0x99A000FF});
         pickWrap.setOnClickListener(v -> pickFiles());
         LinearLayout.LayoutParams p1 = new LinearLayout.LayoutParams(0, dp(56), 1.2f);
         p1.rightMargin = dp(10);
         row.addView(pickWrap, p1);
 
         // Nút Xóa Mod (Trong suốt)
-        FrameLayout delWrap = createBtn("🗑 XÓA MOD", new int[]{0xCCFF4D5E, 0xCC990022});
+        FrameLayout delWrap = createBtn("🗑 XÓA MOD", new int[]{0x99FF4D5E, 0x99990022});
         delWrap.setOnClickListener(v -> restoreFiles());
         row.addView(delWrap, new LinearLayout.LayoutParams(0, dp(56), 1f));
 
@@ -500,7 +501,7 @@ public class Main extends Activity {
         FrameLayout wrap = new FrameLayout(this);
         GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, colors);
         bg.setCornerRadius(dp(16));
-        bg.setStroke(dp(1), 0x80FFFFFF); // Viền trắng mờ
+        bg.setStroke(dp(1), 0x60FFFFFF); // Viền trắng mờ
         wrap.setBackground(bg);
         wrap.setClipToOutline(true);
         wrap.setClickable(true);
@@ -593,7 +594,7 @@ public class Main extends Activity {
     }
 
     // ==========================================
-    // LOGIC NẠP FILE SIÊU TỐC (ĐỌC TRỰC TIẾP TỪ ZIP)
+    // LOGIC NẠP FILE SIÊU TỐC (LỌC RÁC MAC)
     // ==========================================
     void activateFiles() {
         if (busy) return;
@@ -607,7 +608,6 @@ public class Main extends Activity {
         new Thread(() -> {
             ui.post(() -> { setProgress(5, "LOADING"); setStatus("LOADING", C_WARN); });
             
-            // Đường dẫn gốc của game
             File baseDir = new File("/storage/emulated/0/Android/data/" + pkg);
             if (!baseDir.exists()) baseDir.mkdirs();
 
@@ -616,39 +616,55 @@ public class Main extends Activity {
                 ZipInputStream zis = new ZipInputStream(is);
                 
                 ZipEntry entry;
-                byte[] buffer = new byte[1024 * 1024]; // Bộ đệm 1MB cho tốc độ tối đa
+                byte[] buffer = new byte[1024 * 1024]; // 1MB buffer cho tốc độ cao
                 int count = 0;
                 
                 while ((entry = zis.getNextEntry()) != null) {
-                    // Tạo file đích dựa trên đường dẫn có sẵn trong ZIP
-                    File destFile = new File(baseDir, entry.getName());
+                    String entryName = entry.getName();
+
+                    // BỎ QUA FILE RÁC CỦA MAC VÀ HỆ THỐNG
+                    if (entryName.contains("__MACOSX") || entryName.startsWith("._") || entryName.endsWith(".DS_Store")) {
+                        zis.closeEntry();
+                        continue;
+                    }
+                    
+                    File destFile = new File(baseDir, entryName);
                     
                     if (entry.isDirectory()) {
                         destFile.mkdirs();
                     } else {
-                        destFile.getParentFile().mkdirs();
+                        File parent = destFile.getParentFile();
+                        if (parent != null && !parent.exists()) {
+                            parent.mkdirs();
+                        }
                         
-                        // Nếu file đã tồn tại -> Đổi tên thành .bak
-                        if (destFile.exists()) {
-                            File bakFile = new File(destFile.getAbsolutePath() + ".bak");
-                            if (!bakFile.exists()) {
-                                destFile.renameTo(bakFile);
-                            } else {
-                                destFile.delete(); // Đã có .bak rồi thì xóa file cũ
+                        try {
+                            // Nếu file đã tồn tại -> Đổi tên thành .bak
+                            if (destFile.exists()) {
+                                File bakFile = new File(destFile.getAbsolutePath() + ".bak");
+                                if (!bakFile.exists()) {
+                                    destFile.renameTo(bakFile);
+                                } else {
+                                    destFile.delete();
+                                }
                             }
+                            
+                            // Ghi thẳng file mới vào bằng BufferedOutputStream
+                            FileOutputStream fos = new FileOutputStream(destFile);
+                            BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
+                            int len;
+                            while ((len = zis.read(buffer)) > 0) {
+                                bos.write(buffer, 0, len);
+                            }
+                            bos.flush();
+                            bos.close();
+                            fos.close();
+                        } catch (Exception e) {
+                            // Bỏ qua nếu file cụ thể này lỗi (không làm chết app)
                         }
-                        
-                        // Ghi thẳng file mới vào
-                        FileOutputStream fos = new FileOutputStream(destFile);
-                        int len;
-                        while ((len = zis.read(buffer)) > 0) {
-                            fos.write(buffer, 0, len);
-                        }
-                        fos.close();
                     }
                     zis.closeEntry();
                     
-                    // Cập nhật thanh tiến trình (giả lập theo số lượng file)
                     count++;
                     if (count % 5 == 0) {
                         final int p = Math.min(95, 5 + count); 
@@ -672,7 +688,7 @@ public class Main extends Activity {
     }
 
     // ==========================================
-    // LOGIC XÓA MOD (QUÉT TÌM .BAK VÀ KHÔI PHỤC)
+    // LOGIC XÓA MOD
     // ==========================================
     void restoreFiles() {
         if (busy) return;
@@ -713,7 +729,6 @@ public class Main extends Activity {
                 }
             }
         } else {
-            // Nếu là file .bak -> Xóa file mod hiện tại và đổi tên .bak về lại
             if (dir.getName().endsWith(".bak")) {
                 String origPath = dir.getAbsolutePath().substring(0, dir.getAbsolutePath().length() - 4);
                 File orig = new File(origPath);
