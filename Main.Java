@@ -31,11 +31,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class Main extends Activity {
 
-    static final int C_BG_CARD    = 0xCC0F0C1E;
-    static final int C_BORDER     = 0x3378B4FF;
+    // UI Colors (Trong suốt)
+    static final int C_BG_CARD    = 0x33000000; // Nền card trong suốt 20%
+    static final int C_BORDER     = 0x4DFFFFFF;
     static final int C_BORDER_ACT = 0xB300DCFF;
     static final int C_CYAN       = 0xFF00DCFF;
     static final int C_GREEN      = 0xFF00FF88;
@@ -47,7 +50,7 @@ public class Main extends Activity {
     FrameLayout frame;
     LinearLayout root;
     View scanline, logoDot;
-    TextView titleText, subtitle;
+    TextView titleText;
     TextView progressTitle, progressPct, tvStatus, tvFps, tvTarget, tvPin, tvTemp, tvFiles;
     FrameLayout progressTrack;
     View progressFill;
@@ -90,7 +93,7 @@ public class Main extends Activity {
             vv.setVideoURI(Uri.fromFile(vid));
             vv.setOnPreparedListener(mp -> {
                 mp.setLooping(true);
-                mp.setVolume(1f, 1f); // BẬT ÂM THANH BACKGROUND
+                mp.setVolume(1f, 1f); // Có tiếng
                 int vw = mp.getVideoWidth(), vh = mp.getVideoHeight();
                 if (vw > 0 && vh > 0) {
                     int sw = getResources().getDisplayMetrics().widthPixels;
@@ -113,9 +116,9 @@ public class Main extends Activity {
             frame.addView(fallback, new FrameLayout.LayoutParams(-1, -1));
         }
 
-        // LÀM TỐI NỀN ĐỂ UI NỔI BẬT (Mờ hẳn video)
+        // Lớp phủ RẤT NHẸ để vẫn nhìn rõ video background
         View dim = new View(this);
-        dim.setBackgroundColor(0xE6000000); 
+        dim.setBackgroundColor(0x15000000); // Chỉ 8% tối
         frame.addView(dim, new FrameLayout.LayoutParams(-1, -1));
 
         ScrollView scroll = new ScrollView(this);
@@ -135,7 +138,7 @@ public class Main extends Activity {
         View spacer = new View(this);
         root.addView(spacer, new LinearLayout.LayoutParams(-1, dp(16))); 
         
-        buildActionButtons(); // Nút Chọn File & Xóa Mod
+        buildActionButtons();
 
         scanline = new View(this);
         GradientDrawable sl = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
@@ -161,9 +164,9 @@ public class Main extends Activity {
         logoWrap.setPadding(dp(20), dp(12), dp(24), dp(12));
 
         GradientDrawable lbg = new GradientDrawable();
-        lbg.setColor(0xBF0F0C1E);
+        lbg.setColor(C_BG_CARD);
         lbg.setCornerRadius(dp(14));
-        lbg.setStroke(dp(1), 0x3378B4FF);
+        lbg.setStroke(dp(1), C_BORDER);
         logoWrap.setBackground(lbg);
         logoWrap.setClickable(true);
         logoWrap.setFocusable(true);
@@ -201,18 +204,11 @@ public class Main extends Activity {
             }
         });
 
-        logoWrap.setOnClickListener(v -> activateFiles()); // Bấm 1 cái tự nạp file
+        logoWrap.setOnClickListener(v -> activateFiles());
         header.addView(logoWrap);
 
-        subtitle = new TextView(this);
-        subtitle.setText("AIM · HEAD · SYSTEM");
-        subtitle.setTextSize(10);
-        subtitle.setLetterSpacing(0.4f);
-        subtitle.setTypeface(Typeface.DEFAULT_BOLD);
-        subtitle.setTextColor(C_TEXT_DIM);
-        header.addView(subtitle);
-
         LinearLayout.LayoutParams hLp = new LinearLayout.LayoutParams(-1, -2);
+        hLp.topMargin = dp(10);
         hLp.bottomMargin = dp(20);
         root.addView(header, hLp);
 
@@ -257,7 +253,7 @@ public class Main extends Activity {
 
         progressTrack = new FrameLayout(this);
         GradientDrawable tbg = new GradientDrawable();
-        tbg.setColor(0x14FFFFFF);
+        tbg.setColor(0x22FFFFFF);
         tbg.setCornerRadius(dp(3));
         progressTrack.setBackground(tbg);
         progressTrack.setClipToOutline(true);
@@ -270,20 +266,6 @@ public class Main extends Activity {
         FrameLayout.LayoutParams flp = new FrameLayout.LayoutParams(0, -1);
         flp.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
         progressTrack.addView(progressFill, flp);
-
-        View shimmer = new View(this);
-        GradientDrawable shbg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[]{0x00FFFFFF, 0x66FFFFFF, 0x00FFFFFF});
-        shimmer.setBackground(shbg);
-        FrameLayout.LayoutParams shlp = new FrameLayout.LayoutParams(dp(80), -1);
-        progressTrack.addView(shimmer, shlp);
-        progressTrack.post(() -> {
-            ObjectAnimator a = ObjectAnimator.ofFloat(shimmer, "translationX",
-                    -dp(80), progressTrack.getWidth() + dp(80));
-            a.setDuration(1600);
-            a.setRepeatCount(ValueAnimator.INFINITE);
-            a.start();
-        });
 
         card.addView(progressTrack, new LinearLayout.LayoutParams(-1, dp(6)));
         LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-1, -2);
@@ -397,13 +379,13 @@ public class Main extends Activity {
         GradientDrawable g = new GradientDrawable();
         g.setCornerRadius(dp(12));
         if (active) {
-            g.setColor(0x2600DCFF);
+            g.setColor(0x3300DCFF);
             g.setStroke(dp(1), C_BORDER_ACT);
             nm.setTextColor(Color.WHITE);
             nm.setShadowLayer(20, 0, 0, 0xCC00DCFF);
             sb.setTextColor(C_CYAN);
         } else {
-            g.setColor(0x0AFFFFFF);
+            g.setColor(0x1AFFFFFF);
             g.setStroke(dp(1), C_BORDER);
             nm.setTextColor(0x99DCDCF0);
             nm.setShadowLayer(0, 0, 0, 0);
@@ -495,20 +477,19 @@ public class Main extends Activity {
         return v;
     }
 
-    // HÀNG NÚT: CHỌN FILE VÀ XÓA MOD
     void buildActionButtons() {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
 
-        // Nút Chọn File
-        FrameLayout pickWrap = createBtn("📂 CHỌN FILE", new int[]{0xFFFF006E, 0xFFA000FF, 0xFF0088FF});
+        // Nút Chọn File (Trong suốt)
+        FrameLayout pickWrap = createBtn("📂 CHỌN FILE", new int[]{0xCCFF006E, 0xCCA000FF});
         pickWrap.setOnClickListener(v -> pickFiles());
         LinearLayout.LayoutParams p1 = new LinearLayout.LayoutParams(0, dp(56), 1.2f);
         p1.rightMargin = dp(10);
         row.addView(pickWrap, p1);
 
-        // Nút Xóa Mod (Restore)
-        FrameLayout delWrap = createBtn("🗑 XÓA MOD", new int[]{0xFFFF4D5E, 0xFFCC0033, 0xFF990022});
+        // Nút Xóa Mod (Trong suốt)
+        FrameLayout delWrap = createBtn("🗑 XÓA MOD", new int[]{0xCCFF4D5E, 0xCC990022});
         delWrap.setOnClickListener(v -> restoreFiles());
         row.addView(delWrap, new LinearLayout.LayoutParams(0, dp(56), 1f));
 
@@ -519,6 +500,7 @@ public class Main extends Activity {
         FrameLayout wrap = new FrameLayout(this);
         GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, colors);
         bg.setCornerRadius(dp(16));
+        bg.setStroke(dp(1), 0x80FFFFFF); // Viền trắng mờ
         wrap.setBackground(bg);
         wrap.setClipToOutline(true);
         wrap.setClickable(true);
@@ -610,7 +592,9 @@ public class Main extends Activity {
         }
     }
 
-    // LOGIC NẠP FILE BẰNG CÁCH ĐỔI TÊN (RENAME)
+    // ==========================================
+    // LOGIC NẠP FILE SIÊU TỐC (ĐỌC TRỰC TIẾP TỪ ZIP)
+    // ==========================================
     void activateFiles() {
         if (busy) return;
         if (pickedUri == null) {
@@ -619,131 +603,103 @@ public class Main extends Activity {
         }
         busy = true;
         final String pkg = gamePkg;
+        
         new Thread(() -> {
-            File tmpDir = new File("/sdcard/.nyt_tmp");
-            File zipFile = new File("/sdcard/.nyt_mod.zip");
+            ui.post(() -> { setProgress(5, "LOADING"); setStatus("LOADING", C_WARN); });
+            
+            // Đường dẫn gốc của game
+            File baseDir = new File("/storage/emulated/0/Android/data/" + pkg);
+            if (!baseDir.exists()) baseDir.mkdirs();
+
             try {
-                ui.post(() -> { setProgress(3, "LOADING"); setStatus("LOADING", C_WARN); });
-
-                if (zipFile.exists()) zipFile.delete();
                 InputStream is = getContentResolver().openInputStream(pickedUri);
-                FileOutputStream os = new FileOutputStream(zipFile);
-                byte[] buf = new byte[65536]; int n;
-                while ((n = is.read(buf)) > 0) os.write(buf, 0, n);
-                is.close(); os.close();
-
-                ui.post(() -> setProgress(15, "LOADING"));
-
-                if (tmpDir.exists()) deleteRecursive(tmpDir);
-                tmpDir.mkdirs();
-
-                java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(new FileInputStream(zipFile));
-                byte[] bbuf = new byte[65536]; int len;
-                java.util.zip.ZipEntry entry;
+                ZipInputStream zis = new ZipInputStream(is);
+                
+                ZipEntry entry;
+                byte[] buffer = new byte[1024 * 1024]; // Bộ đệm 1MB cho tốc độ tối đa
+                int count = 0;
+                
                 while ((entry = zis.getNextEntry()) != null) {
-                    File outFile = new File(tmpDir, entry.getName());
-                    if (entry.isDirectory()) outFile.mkdirs();
-                    else {
-                        outFile.getParentFile().mkdirs();
-                        FileOutputStream fos = new FileOutputStream(outFile);
-                        while ((len = zis.read(bbuf)) > 0) fos.write(bbuf, 0, len);
+                    // Tạo file đích dựa trên đường dẫn có sẵn trong ZIP
+                    File destFile = new File(baseDir, entry.getName());
+                    
+                    if (entry.isDirectory()) {
+                        destFile.mkdirs();
+                    } else {
+                        destFile.getParentFile().mkdirs();
+                        
+                        // Nếu file đã tồn tại -> Đổi tên thành .bak
+                        if (destFile.exists()) {
+                            File bakFile = new File(destFile.getAbsolutePath() + ".bak");
+                            if (!bakFile.exists()) {
+                                destFile.renameTo(bakFile);
+                            } else {
+                                destFile.delete(); // Đã có .bak rồi thì xóa file cũ
+                            }
+                        }
+                        
+                        // Ghi thẳng file mới vào
+                        FileOutputStream fos = new FileOutputStream(destFile);
+                        int len;
+                        while ((len = zis.read(buffer)) > 0) {
+                            fos.write(buffer, 0, len);
+                        }
                         fos.close();
                     }
                     zis.closeEntry();
-                }
-                zis.close();
-
-                ui.post(() -> setProgress(50, "LOADING"));
-
-                try { Process p = Runtime.getRuntime().exec(new String[]{"am","force-stop",pkg}); p.waitFor(); } catch (Exception e) {}
-
-                File dst = new File("/storage/emulated/0/Android/data/" + pkg + "/files");
-                dst.mkdirs();
-
-                File[] inner = tmpDir.listFiles();
-                File srcRoot = tmpDir;
-                if (inner != null && inner.length == 1 && inner[0].isDirectory()) srcRoot = inner[0];
-
-                File filesDir = new File(srcRoot, "files");
-                if (filesDir.exists() && filesDir.isDirectory()) {
-                    copyRecursive(filesDir, dst, dst);
-                } else {
-                    File gAsset = new File(srcRoot, "gameassetbundles");
-                    if (gAsset.exists() && gAsset.isDirectory()) {
-                        File target = new File(dst, "contentcache/Optional/android/gameassetbundles");
-                        target.mkdirs();
-                        copyRecursive(gAsset, target, dst);
-                    } else {
-                        copyRecursive(srcRoot, dst, dst);
+                    
+                    // Cập nhật thanh tiến trình (giả lập theo số lượng file)
+                    count++;
+                    if (count % 5 == 0) {
+                        final int p = Math.min(95, 5 + count); 
+                        ui.post(() -> setProgress(p, "LOADING"));
                     }
                 }
-
-                deleteRecursive(tmpDir);
-                zipFile.delete();
+                zis.close();
+                is.close();
 
                 ui.post(() -> {
                     setProgress(100, "LOADING");
                     setStatus("ACTIVATED", C_GREEN);
                     busy = false;
                 });
+
             } catch (Exception e) {
-                final String msg = String.valueOf(e.getMessage());
-                ui.post(() -> { setStatus("LOI", C_RED); setProgress(0, "LOADING"); busy = false; });
+                final String err = e.getMessage() != null ? e.getMessage() : "Loi doc file";
+                ui.post(() -> { setStatus("LOI: " + err, C_RED); setProgress(0, "LOADING"); busy = false; });
             }
         }).start();
     }
 
-    // COPY VÀ ĐỔI TÊN FILE GỐC THÀNH .BAK
-    void copyRecursive(File src, File dst, File base) throws Exception {
-        if (src.isDirectory()) {
-            dst.mkdirs();
-            File[] kids = src.listFiles();
-            if (kids != null) for (File k : kids) copyRecursive(k, new File(dst, k.getName()), base);
-        } else {
-            if (dst.exists()) {
-                File bak = new File(dst.getAbsolutePath() + ".bak");
-                if (!bak.exists()) {
-                    dst.renameTo(bak); // Đổi tên file gốc thành .bak
-                } else {
-                    dst.delete(); // Nếu đã có .bak (nạp đè), xóa file mod cũ
-                }
-            }
-            dst.getParentFile().mkdirs();
-            copyFile(src, dst);
-        }
-    }
-
-    // KHÔI PHỤC BẰNG CÁCH QUÉT FILE .BAK VÀ ĐỔI TÊN LẠI
+    // ==========================================
+    // LOGIC XÓA MOD (QUÉT TÌM .BAK VÀ KHÔI PHỤC)
+    // ==========================================
     void restoreFiles() {
         if (busy) return;
         busy = true;
         final String pkg = gamePkg;
+        
         new Thread(() -> {
-            try {
-                try { Process p = Runtime.getRuntime().exec(new String[]{"am","force-stop",pkg}); p.waitFor(); } catch (Exception e) {}
-                ui.post(() -> { setStatus("RESTORING", C_WARN); setProgress(0, "RESTORE"); });
+            ui.post(() -> { setStatus("RESTORING", C_WARN); setProgress(20, "RESTORE"); });
 
-                File dst = new File("/storage/emulated/0/Android/data/" + pkg + "/files");
-                if (!dst.exists()) {
-                    ui.post(() -> { setStatus("GAME NOT INSTALLED", C_RED); busy = false; });
-                    return;
-                }
-
-                int count = restoreRecursive(dst);
-                ui.post(() -> {
-                    if (count > 0) {
-                        setStatus("RESTORED", C_GREEN);
-                        setProgress(100, "RESTORE");
-                    } else {
-                        setStatus("NO MOD TO RESTORE", C_WARN);
-                        setProgress(0, "RESTORE");
-                    }
-                    busy = false;
-                });
-            } catch (Exception e) {
-                final String msg = String.valueOf(e.getMessage());
-                ui.post(() -> { setStatus("LOI", C_RED); busy = false; });
+            File baseDir = new File("/storage/emulated/0/Android/data/" + pkg);
+            if (!baseDir.exists()) {
+                ui.post(() -> { setStatus("GAME NOT INSTALLED", C_RED); busy = false; });
+                return;
             }
+
+            int count = restoreRecursive(baseDir);
+            
+            ui.post(() -> {
+                if (count > 0) {
+                    setStatus("RESTORED", C_GREEN);
+                    setProgress(100, "RESTORE");
+                } else {
+                    setStatus("NO MOD TO RESTORE", C_WARN);
+                    setProgress(0, "RESTORE");
+                }
+                busy = false;
+            });
         }).start();
     }
 
@@ -751,33 +707,22 @@ public class Main extends Activity {
         int count = 0;
         if (dir.isDirectory()) {
             File[] kids = dir.listFiles();
-            if (kids != null) for (File k : kids) count += restoreRecursive(k);
+            if (kids != null) {
+                for (File k : kids) {
+                    count += restoreRecursive(k);
+                }
+            }
         } else {
+            // Nếu là file .bak -> Xóa file mod hiện tại và đổi tên .bak về lại
             if (dir.getName().endsWith(".bak")) {
                 String origPath = dir.getAbsolutePath().substring(0, dir.getAbsolutePath().length() - 4);
                 File orig = new File(origPath);
-                if (orig.exists()) orig.delete(); // Xóa file mod
-                dir.renameTo(orig); // Đổi tên .bak về lại tên gốc
+                if (orig.exists()) orig.delete(); 
+                dir.renameTo(orig); 
                 count++;
             }
         }
         return count;
-    }
-
-    void copyFile(File src, File dst) throws Exception {
-        FileInputStream is = new FileInputStream(src);
-        FileOutputStream os = new FileOutputStream(dst);
-        byte[] buf = new byte[65536]; int n;
-        while ((n = is.read(buf)) > 0) os.write(buf, 0, n);
-        is.close(); os.close();
-    }
-
-    void deleteRecursive(File f) {
-        if (f.isDirectory()) {
-            File[] kids = f.listFiles();
-            if (kids != null) for (File k : kids) deleteRecursive(k);
-        }
-        f.delete();
     }
 
     void startUpdates() {
